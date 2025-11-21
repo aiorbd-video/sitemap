@@ -1,85 +1,80 @@
-export async function onRequest(context) {
-  const { sport, id } = context.params;
+import Head from "next/head";
 
-  const FIREBASE_URL =
+export async function getServerSideProps({ params }) {
+  const { sport, id } = params;
+
+  const firebaseURL =
     "https://ratul-liv-default-rtdb.asia-southeast1.firebasedatabase.app/matches.json";
 
-  const MAIN_DOMAIN = "https://bd71.vercel.app";
-
-  const res = await fetch(FIREBASE_URL);
+  const res = await fetch(firebaseURL);
   const data = await res.json();
+  const match = data?.[sport]?.[id] || null;
 
-  const match = data?.[sport]?.[id];
+  return {
+    props: {
+      sport,
+      id,
+      match,
+      domain: "https://bd71.vercel.app",
+    },
+  };
+}
 
-  if (!match) {
-    return new Response("<h2 style='color:white'>Match Not Found</h2>", {
-      headers: { "Content-Type": "text/html" }
-    });
-  }
+export default function Page({ match, sport, id, domain }) {
+  if (!match) return <h2>Match Not Found</h2>;
 
   const title = `${match.team1?.name} vs ${match.team2?.name} | ${match.title}`;
-  const url = `${MAIN_DOMAIN}/match/${sport}/${id}`;
-  const description = `Watch ${match.team1?.name} vs ${match.team2?.name} live. ${match.title}. Multiple servers, HD, DRM supported.`;
-  const ogImage = match.team1?.logo || match.team2?.logo || `${MAIN_DOMAIN}/thumbnail.png`;
+  const desc = `Watch ${match.team1?.name} vs ${match.team2?.name} live stream. ${match.title}. Multi-server HD streaming.`;
 
-  const html = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<title>${title}</title>
-<meta name="description" content="${description}">
-<link rel="canonical" href="${url}">
+  const url = `${domain}/match/${sport}/${id}`;
+  const image = match.team1?.logo || match.team2?.logo;
 
-<meta property="og:title" content="${title}">
-<meta property="og:description" content="${description}">
-<meta property="og:image" content="${ogImage}">
-<meta property="og:url" content="${url}">
-<meta property="og:type" content="video.other">
+  return (
+    <>
+      <Head>
+        <title>{title}</title>
+        <meta name="description" content={desc} />
+        <link rel="canonical" href={url} />
 
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="${title}">
-<meta name="twitter:description" content="${description}">
-<meta name="twitter:image" content="${ogImage}">
+        {/* OG */}
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={desc} />
+        <meta property="og:image" content={image} />
+        <meta property="og:url" content={url} />
+        <meta property="og:type" content="video.other" />
 
-<script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SportsEvent",
-  "name": "${title}",
-  "startDate": "${match.startTime}",
-  "endDate": "${match.endTime}",
-  "description": "${description}",
-  "url": "${url}",
-  "homeTeam": {
-      "@type": "SportsTeam",
-      "name": "${match.team1?.name}",
-      "logo": "${match.team1?.logo}"
-  },
-  "awayTeam": {
-      "@type": "SportsTeam",
-      "name": "${match.team2?.name}",
-      "logo": "${match.team2?.logo}"
-  }
-}
-</script>
+        {/* Twitter */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={title} />
+        <meta name="twitter:description" content={desc} />
+        <meta name="twitter:image" content={image} />
 
-<style>
-body { background:#020202; color:white; font-family:Arial; padding:20px; }
-iframe { width:100%; height:360px; border:0; border-radius:12px; margin-top:20px; }
-</style>
-</head>
+        {/* Schema */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SportsEvent",
+              name: title,
+              startDate: match.startTime,
+              endDate: match.endTime,
+              homeTeam: { "@type": "SportsTeam", name: match.team1?.name },
+              awayTeam: { "@type": "SportsTeam", name: match.team2?.name },
+              image,
+              url,
+            }),
+          }}
+        />
+      </Head>
 
-<body>
-<h2>${match.team1?.name} vs ${match.team2?.name}</h2>
-<p>${match.title}</p>
+      <h2>{match.team1.name} vs {match.team2.name}</h2>
+      <p>{match.title}</p>
 
-<iframe src="${MAIN_DOMAIN}/?autoplay=1&match=${sport}:${id}"></iframe>
-
-</body>
-</html>
-`;
-
-  return new Response(html, {
-    headers: { "Content-Type": "text/html" }
-  });
+      <iframe
+        src={`${domain}/?match=${sport}:${id}&autoplay=1`}
+        style={{ width: "100%", height: "380px", border: "0" }}
+      />
+    </>
+  );
 }
