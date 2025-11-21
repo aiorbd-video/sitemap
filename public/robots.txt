@@ -2,3 +2,11 @@ User-agent: *
 Allow: /
 
 Sitemap: https://sitemap-cvs.pages.dev/sitemap.xml
+Sitemap: https://bd71.vercel.app/sitemap.xml
+
+# Crawling rate optimization
+Crawl-delay: 1
+
+# Block internal scripts
+Disallow: /api/
+Disallow: /admin/
