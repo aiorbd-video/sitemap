@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://YOUR-CLOUDFLARE-PROJECT.pages.dev/sitemap.xml
+Sitemap: https://sitemap-cvs.pages.dev/sitemap.xml
