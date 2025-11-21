@@ -1,43 +1,42 @@
-export async function onRequest(context) {
+export const onRequest = async () => {
   const firebaseURL =
     "https://ratul-liv-default-rtdb.asia-southeast1.firebasedatabase.app/matches.json";
 
-  const domain = "https://bd71.vercel.app";
-
-  let xml = `<?xml version="1.0" encoding="UTF-8"?> 
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
-        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">`;
+  let xml = "";
 
   try {
     const res = await fetch(firebaseURL);
     const data = await res.json();
 
-    for (const sport of Object.keys(data)) {
-      for (const key of Object.keys(data[sport])) {
-        const m = data[sport][key];
-        if (!m) continue;
+    const domain = "https://bd71.vercel.app";
 
-        const link = `${domain}/match/${sport}/${key}`;
-        const img = m.team1?.logo || m.team2?.logo || "";
+    let urls = [];
 
-        xml += `
-<url>
-  <loc>${link}</loc>
-  <changefreq>hourly</changefreq>
-  <priority>0.90</priority>
-  <image:image>
-    <image:loc>${img}</image:loc>
-  </image:image>
-</url>`;
-      }
-    }
-
-    xml += "</urlset>";
-
-    return new Response(xml, {
-      headers: { "Content-Type": "application/xml" },
+    Object.keys(data || {}).forEach((sport) => {
+      const group = data[sport] || {};
+      Object.keys(group).forEach((id) => {
+        urls.push(
+          `<url>
+            <loc>${domain}/match/${sport}/${id}</loc>
+            <changefreq>hourly</changefreq>
+            <priority>0.9</priority>
+          </url>`
+        );
+      });
     });
+
+    xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join("\n")}
+</urlset>`;
   } catch (e) {
-    return new Response("Error generating sitemap", { status: 500 });
+    xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9"></urlset>`;
   }
-}
+
+  return new Response(xml, {
+    headers: {
+      "Content-Type": "application/xml",
+    },
+  });
+};
